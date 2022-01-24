@@ -69,7 +69,7 @@ def iterate_data(data, model, batch_size, sp, max_length, device):
     percentile = max(int(len(idxs) / 100), 1)
     for i in range(len(idxs)):
         if i % percentile == 0:
-            print('{}/{} ({}%)'.format(i, len(idxs), i * 100.0 / len(idxs)), file=sys.stderr)
+            #print('{}/{} ({}%)'.format(i, len(idxs), i * 100.0 / len(idxs)), file=sys.stderr)
             sys.stderr.flush()
         idx = idxs[i]
         item = data[idx]
@@ -112,7 +112,7 @@ def generate(model, sp, max_length, prime, state, device):
 def check_on_manual_examples(model, device, sp):
     items = [
         'Ярославская область, город Ярославль, проспект Ленина, д. 23, кв. 8',
-        'город Москва, улица Пушкина, д. Колотушкина',
+        'Костромская область, д. Берендеево',
     ]
     items = list(map(lambda item: sp.EncodeAsIds(item), items))
     encoder_input, lengths = prepare_encoder_batch(items, sp, model, device)
@@ -134,9 +134,9 @@ def main(data_path, models_path, start_epoch, learning_rate, prev_loss):
     cpu_device = torch.device("cpu")
     print(cuda, device)
 
-    embed_size, hidden_size, n_layers, latent_size, dropout = 16, 256, 4, 64, 0.2
+    embed_size, hidden_size, n_layers, latent_size, dropout = 16, 512, 2, 64, 0.2
     batch_size, clip, max_length = 20000, 0.1, 255
-    vae_freq = 100
+    vae_freq = 10
 
     print(embed_size, hidden_size, n_layers, latent_size, dropout, batch_size, clip, max_length, vae_freq)
 
@@ -211,20 +211,20 @@ def main(data_path, models_path, start_epoch, learning_rate, prev_loss):
                 sys.stdout.flush()
                 lr_changed = True
                 break
-            if step % 5000 == 0:
-                print('loss {}, recon_loss {}, kld_loss {}, time {}'.format(total_loss / total_count, total_recon_loss / total_count, total_kld_loss / total_count, time.time() - start_time), file=sys.stderr)
-                model.to(cpu_device)
-                model.eval()
-                h = torch.randn(1, latent_size).to(cpu_device)
-                h = model.latent_2_hidden(h)
-                print(generate(model, sp, 300, '', h, cpu_device), file=sys.stderr)
-                print('', file=sys.stderr)
-                check_on_manual_examples(model, cpu_device, sp)
-                sys.stderr.flush()
-                model.to(device)
         if lr_changed:
             continue
         print('Epoch {}, loss {}, recon_loss {}, kld_loss {}, time {}'.format(epoch, total_loss / total_count, total_recon_loss / total_count, total_kld_loss / total_count, time.time() - start_time))
+        if epoch % 10 == 0:
+            print('loss {}, recon_loss {}, kld_loss {}, time {}'.format(total_loss / total_count, total_recon_loss / total_count, total_kld_loss / total_count, time.time() - start_time), file=sys.stderr)
+            model.to(cpu_device)
+            model.eval()
+            h = torch.randn(1, latent_size).to(cpu_device)
+            h = model.latent_2_hidden(h)
+            print(generate(model, sp, 300, 'Костромская область,', h, cpu_device), file=sys.stderr)
+            print('', file=sys.stderr)
+            check_on_manual_examples(model, cpu_device, sp)
+            sys.stderr.flush()
+            model.to(device)
         sys.stdout.flush()
         prev_loss = total_loss / total_count
         torch.save(model.state_dict(), '{}_{}'.format(models_path, epoch))

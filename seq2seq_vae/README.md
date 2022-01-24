@@ -5,7 +5,7 @@ Input data: text file
  b. Make BPE dictionary: python3 prepare_bpe_dictionary.py russia_all_addrs_small.txt bpe1k 1000<br>
 
 2. Train a model.<br>
- a. Run training: python3 seq2seq.py russia_all_addrs_small.txt model1 -1 0.00020012017 100<br>
+ a. Run training: python3 seq2seq.py russia_all_addrs_tiny.txt models/model1 -1 0.00020012017 100<br>
  b. Wait sufficient time.<br>
 
 3. Run the model in generation mode.<br>
